@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth.dart';
 
 
 
@@ -150,7 +152,11 @@ class MyCustomFormState extends State<MyCustomForm> {
               child: ElevatedButton(
                 onPressed: () async {
                 // Validate returns true if the form is valid, or false otherwise.
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
                 if (_formKey.currentState!.validate()) {
+                  authProvider.setLoading(true);
+                  await Future.delayed(Duration(seconds: 2));
+
                   // If the form is valid, display a snackbar. In the real world,
                   // you'd often call a server or save the information in a database.
                   final prefs = await SharedPreferences.getInstance();
@@ -158,11 +164,14 @@ class MyCustomFormState extends State<MyCustomForm> {
                   final savedpwd = prefs.getString('password') ?? '';
 
                   if (_emailController.text == savedemail && _passwordController.text == savedpwd) {
+                    authProvider.setLoading(false);
                     ScaffoldMessenger.of(context).showSnackBar(
+                      
                       SnackBar(content: Text('Login Successful!')),
                     );
+                    Navigator.pushNamed(context, '/profile');
                   } else {
-                    print('$savedemail, $savedpwd, ${_emailController.text}, ${_passwordController.text}');
+                    authProvider.setLoading(false);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Invalid Credentials!")),
                     );
@@ -179,14 +188,19 @@ class MyCustomFormState extends State<MyCustomForm> {
                 
               ),
               
-              child: const Text(
-                'Login',
-                style: TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                
+              child: Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  return authProvider.isLoading
+                  ? const CircularProgressIndicator(color: Colors.white,)
+                  : const Text(
+                    'Login',
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ); 
+                }
               ),
               ),
               

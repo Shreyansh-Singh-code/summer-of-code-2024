@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'auth.dart';
+import 'package:provider/provider.dart';
 
 class MyCustomForm2 extends StatefulWidget {
   const MyCustomForm2({super.key});
@@ -21,7 +23,7 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
+    
     return Form(
       key: _formKey2,
       child: Padding(
@@ -162,15 +164,17 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
 
               child: ElevatedButton(
                 onPressed: () async {
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
                   if (_formKey2.currentState!.validate()) {
-                    print('validation passed!');
+                    authProvider.setLoading(true);
+                    await Future.delayed(const Duration(seconds: 2));
 
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('full_name', _nameController.text);
                     await prefs.setString('email', _emailController.text);
                     await prefs.setString('password', _passwordController.text);
                     await prefs.setString('phone_no', _phonenoController.text);
-
+                    authProvider.setLoading(false);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Registered Successfully!'))
                     );
@@ -181,17 +185,23 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 218, 192, 163)
                 ),
-                child: const Text(
-                  'Sign Up',
-                  style: TextStyle(
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black
-                  ),
+                child: Consumer<AuthProvider>(
+                  builder: (context, authProvider,child) {
+                    return authProvider.isLoading
+                    ? const CircularProgressIndicator(color: Colors.white,)
+                    : const Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black
+                      ),
+                    );
+                  }
                 ),
               ),
             ),
-            SizedBox(height: 35,)
+            const SizedBox(height: 35,)
 
 
           ],
@@ -277,6 +287,6 @@ class RegisterPage extends StatelessWidget {
           )
         ),
       )
-    ); 
+    );
   } 
 }
