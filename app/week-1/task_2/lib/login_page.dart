@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth.dart';
+import 'internet.dart';
 
 
 
@@ -162,9 +163,11 @@ class MyCustomFormState extends State<MyCustomForm> {
                   final prefs = await SharedPreferences.getInstance();
                   final savedemail = prefs.getString('email') ?? '';
                   final savedpwd = prefs.getString('password') ?? '';
+                  
 
                   if (_emailController.text == savedemail && _passwordController.text == savedpwd) {
                     authProvider.setLoading(false);
+                    authProvider.setEmail(savedemail);
                     ScaffoldMessenger.of(context).showSnackBar(
                       
                       SnackBar(content: Text('Login Successful!')),
@@ -231,6 +234,7 @@ class LoginPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                children: [
+                ConnectivityWidget(),
                 const Padding(
                   padding: EdgeInsets.only(top: 50,right: 40, left: 40,bottom:20),
                   child: Row(
@@ -316,7 +320,8 @@ class LoginPage extends StatelessWidget {
                             ),
                           )
                         ],
-                      )
+                      ),
+                      ConnectivityWidget(),
                       
             
                     ],

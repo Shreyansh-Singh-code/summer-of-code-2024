@@ -35,6 +35,10 @@ dependencies:
   provider: ^6.1.2
   flutter_barcode_scanner: ^2.0.0
   permission_handler: ^10.0.0
+  connectivity_plus: ^6.1.1
+  firebase_core: ^3.9.0
+  firebase_auth: ^5.3.4
+  
 
 
   # The following adds the Cupertino Icons font to your application.

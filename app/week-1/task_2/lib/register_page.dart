@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'auth.dart';
+import 'internet.dart';
 import 'package:provider/provider.dart';
 
 class MyCustomForm2 extends StatefulWidget {
@@ -174,6 +175,9 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
                     await prefs.setString('email', _emailController.text);
                     await prefs.setString('password', _passwordController.text);
                     await prefs.setString('phone_no', _phonenoController.text);
+                    authProvider.setFullname(_nameController.text);
+                    authProvider.setPhone(_phonenoController.text);
+                    
                     authProvider.setLoading(false);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Registered Successfully!'))
@@ -227,11 +231,11 @@ class RegisterPage extends StatelessWidget {
       body: SizedBox.expand(
         child: Container(
           color: const Color.fromARGB(255, 16, 44, 87),
-          child:  const SingleChildScrollView(
+          child:   SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                children: [
-                Padding(
+                const Padding(
                   padding: EdgeInsets.only(top: 50,right: 40, left: 40,bottom:20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -257,7 +261,7 @@ class RegisterPage extends StatelessWidget {
                     children: [
                       SizedBox(height: 60,),
             
-                      Text(
+                      const Text(
                         'Create Account Now!',
                         style: TextStyle(
                           color: Colors.white,
@@ -267,7 +271,7 @@ class RegisterPage extends StatelessWidget {
                       ),
                       SizedBox(height: 35,),
             
-                      Text(
+                      const Text(
                         'Full Name',
                         style: TextStyle(
                           fontSize: 27,
@@ -275,9 +279,12 @@ class RegisterPage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height:20 ,),
+                      const SizedBox(height:20 ,),
             
                       MyCustomForm2(),
+                      ConnectivityWidget(),
+
+                      
                     ],
             
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:task_2/internet.dart';
 
 
 class WelcomePage extends StatelessWidget {
@@ -17,6 +18,7 @@ class WelcomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                children: [
+                
                 const Padding(
                   padding: EdgeInsets.only(top: 50,right: 40, left: 40,bottom:20),
                   child: Row(
@@ -142,10 +144,12 @@ class WelcomePage extends StatelessWidget {
                       ],
                     ),
                     
+                    
                     ],
                   ),
             
-                )
+                ),
+                ConnectivityWidget(),
                 
                ]
             ),

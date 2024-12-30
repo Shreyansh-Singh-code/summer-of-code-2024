@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth.dart';
+import 'package:task_2/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 import 'welcome_page.dart';
 import 'register_page.dart';
+import 'internet.dart';
+import 'auth.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(
     MultiProvider(
       providers: [
@@ -140,7 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Welcome ${authProvider.full_name ?? 'Guest'}",
+                        "Welcome ${authProvider.fullName ?? 'Guest'}",
                         style: TextStyle(
                           fontSize: 25,
                           fontWeight: FontWeight.bold,
@@ -165,7 +172,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 40,),
+                      const SizedBox(height: 40,),
 
                       SizedBox(
                         height: 50,
@@ -256,7 +263,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
                         },
                       ),
-                      const SizedBox(height: 30,)
+                      const SizedBox(height: 30,),
+                      ConnectivityWidget(),
 
 
                     ],

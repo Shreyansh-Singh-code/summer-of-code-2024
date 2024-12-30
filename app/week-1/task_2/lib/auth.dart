@@ -14,22 +14,22 @@ class AuthProvider with ChangeNotifier {
 
  String? get email => _email;
 
- String? _full_name;
+ String? _fullName;
 
- String? get full_name => _full_name;
+ String? get fullName => _fullName;
 
- int? _phone;
+ String? _phone;
 
- int? get phone => _phone;
+ String? get phone => _phone;
 
- void setPhone(int phone) {
+ void setPhone(String phone) {
   _phone = phone;
   notifyListeners();
  }
 
 
- void setFullname(String full_name) {
-  _full_name = full_name;
+ void setFullname(String fullName) {
+  _fullName = fullName;
   notifyListeners();
  }
 
