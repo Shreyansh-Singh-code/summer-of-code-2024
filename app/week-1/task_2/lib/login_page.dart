@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:task_2/auth.dart' as custom_auth;
 import 'internet.dart';
 
 
@@ -22,9 +24,92 @@ class MyCustomFormState extends State<MyCustomForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  Future<void> signInWithEmail(BuildContext context) async {
+    final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+
+    if (_formKey.currentState!.validate()) {
+      authProvider.setLoading(true);
+
+      try {
+        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+
+        final userId = userCredential.user!.uid;
+
+        final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        if(doc.exists) {
+          final userData = doc.data()!;
+          authProvider.setFullname(userData['name']);
+          authProvider.setEmail(userData['email']);
+          authProvider.setPhone(userData['phone']);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login Successful!')),
+        );
+
+        Navigator.pushNamed(context, '/profile');
+        } else{
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User data not found in Firestore.')),
+          );
+        }
+  
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.message}')),
+        );
+      } catch(e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unexpected error: $e')),
+        );
+      } finally {
+        authProvider.setLoading(false);
+      }
+    }
+  }
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+    authProvider.setLoading(true);
+
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Google Sign-In canceled")),
+        );
+        authProvider.setLoading(false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Signed in with Google")),
+      );
+
+      Navigator.pushNamed(context, '/profile'); 
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Google Sign-In error: $e")),
+      );
+    } finally {
+      authProvider.setLoading(false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
+    
     
     return Form(
       key: _formKey,
@@ -151,47 +236,18 @@ class MyCustomFormState extends State<MyCustomForm> {
               height:50,
             
               child: ElevatedButton(
-                onPressed: () async {
-                // Validate returns true if the form is valid, or false otherwise.
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                if (_formKey.currentState!.validate()) {
-                  authProvider.setLoading(true);
-                  await Future.delayed(Duration(seconds: 2));
-
-                  // If the form is valid, display a snackbar. In the real world,
-                  // you'd often call a server or save the information in a database.
-                  final prefs = await SharedPreferences.getInstance();
-                  final savedemail = prefs.getString('email') ?? '';
-                  final savedpwd = prefs.getString('password') ?? '';
-                  
-
-                  if (_emailController.text == savedemail && _passwordController.text == savedpwd) {
-                    authProvider.setLoading(false);
-                    authProvider.setEmail(savedemail);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      
-                      SnackBar(content: Text('Login Successful!')),
-                    );
-                    Navigator.pushNamed(context, '/profile');
-                  } else {
-                    authProvider.setLoading(false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Invalid Credentials!")),
-                    );
-                  }
-                }
-              },
+                onPressed: () => signInWithEmail(context),
 
 
 
-              style:ElevatedButton.styleFrom(
+               style:ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 218, 192, 163),
                 elevation: 10,
                 shadowColor: Colors.black12
                 
               ),
               
-              child: Consumer<AuthProvider>(
+               child: Consumer<custom_auth.AuthProvider>(
                 builder: (context, authProvider, child) {
                   return authProvider.isLoading
                   ? const CircularProgressIndicator(color: Colors.white,)
@@ -208,6 +264,41 @@ class MyCustomFormState extends State<MyCustomForm> {
               ),
               
             ),
+            SizedBox(height: 20,),
+
+            SizedBox(
+              width: double.infinity,
+              height:50,
+            
+              child: ElevatedButton(
+                onPressed: () => signInWithGoogle(context),
+
+
+
+               style:ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 218, 192, 163),
+                elevation: 10,
+                shadowColor: Colors.black12
+                
+              ),
+              
+               child: Consumer<custom_auth.AuthProvider>(
+                builder: (context, authProvider, child) {
+                  return authProvider.isLoading
+                  ? const CircularProgressIndicator(color: Colors.white,)
+                  : const Text(
+                    'Sign In with Google',
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ); 
+                }
+              ),
+              ),
+              
+            )
 
             
           ],
@@ -227,6 +318,16 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: const Text(
+          "Login to continue",
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+          ),
+        backgroundColor: const Color.fromARGB(255, 218, 235, 228),
+      ),
       body: SizedBox.expand(
         child: Container(
           color: const Color.fromARGB(255, 16, 44, 87),

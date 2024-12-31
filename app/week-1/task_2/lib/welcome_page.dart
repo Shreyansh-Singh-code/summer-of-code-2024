@@ -8,9 +8,18 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: const Text(
+          "Welcome!",
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+          ),
+        backgroundColor: const Color.fromARGB(255, 218, 235, 228),
+      ),
       body: SizedBox.expand(
         child: Container(
           color: const Color.fromARGB(255, 16, 44, 87),
@@ -45,7 +54,7 @@ class WelcomePage extends StatelessWidget {
                     children: [
             
                       Image.asset('assests/images/welcome.png', height: 300, width: 350,fit: BoxFit.cover,),
-                      SizedBox(height: 40,),
+                      const SizedBox(height: 40,),
             
                       const Text(
                       'Hello, Welcome !',

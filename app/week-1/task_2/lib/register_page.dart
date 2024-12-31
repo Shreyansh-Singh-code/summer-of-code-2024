@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
-import 'auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:task_2/auth.dart' as custom_auth;
 import 'internet.dart';
 import 'package:provider/provider.dart';
 
@@ -21,6 +23,91 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phonenoController = TextEditingController();
+
+  Future<void> signUpWithEmailAndPassword(BuildContext context) async {
+    final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+
+    if(_formKey2.currentState!.validate()) {
+      authProvider.setLoading(true);
+    
+    try {
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      final userId = userCredential.user!.uid;
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'phone': _phonenoController.text,
+        'userId': userId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registered Successfully!')),
+        );
+
+      Navigator.pushReplacementNamed(context, '/login');
+
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.message}')),
+        );
+    } catch(e) {
+      print("Unexpected error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Unexpected error: $e"))
+      );
+    } finally {
+      authProvider.setLoading(false);
+    }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill out all the correctly."))
+      );
+    }
+
+  }
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+    authProvider.setLoading(true);
+
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Google Sign-In canceled")),
+        );
+        authProvider.setLoading(false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Signed in with Google")),
+      );
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Google Sign-In error: $e")),
+      );
+    } finally {
+      authProvider.setLoading(false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,32 +251,12 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
               height: 50,
 
               child: ElevatedButton(
-                onPressed: () async {
-                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                  if (_formKey2.currentState!.validate()) {
-                    authProvider.setLoading(true);
-                    await Future.delayed(const Duration(seconds: 2));
-
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setString('full_name', _nameController.text);
-                    await prefs.setString('email', _emailController.text);
-                    await prefs.setString('password', _passwordController.text);
-                    await prefs.setString('phone_no', _phonenoController.text);
-                    authProvider.setFullname(_nameController.text);
-                    authProvider.setPhone(_phonenoController.text);
-                    
-                    authProvider.setLoading(false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Registered Successfully!'))
-                    );
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
-                },
+                onPressed: () => signUpWithEmailAndPassword(context),
 
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 218, 192, 163)
                 ),
-                child: Consumer<AuthProvider>(
+                child: Consumer<custom_auth.AuthProvider>(
                   builder: (context, authProvider,child) {
                     return authProvider.isLoading
                     ? const CircularProgressIndicator(color: Colors.white,)
@@ -205,7 +272,35 @@ class MyCustomFormState2 extends State<MyCustomForm2> {
                 ),
               ),
             ),
-            const SizedBox(height: 35,)
+            const SizedBox(height: 20,),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+
+              child: ElevatedButton(
+                onPressed: () => signInWithGoogle(context),
+
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 218, 192, 163)
+                ),
+                child: Consumer<custom_auth.AuthProvider>(
+                  builder: (context, authProvider,child) {
+                    return authProvider.isLoading
+                    ? const CircularProgressIndicator(color: Colors.white,)
+                    : const Text(
+                      'Sign In with Google',
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black
+                      ),
+                    );
+                  }
+                ),
+              ),
+            ),
+            const SizedBox(height: 20,)
 
 
           ],
@@ -225,9 +320,19 @@ class RegisterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
+    
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: const Text(
+          "Register New User",
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+          ),
+        backgroundColor: const Color.fromARGB(255, 218, 235, 228),
+      ),
       body: SizedBox.expand(
         child: Container(
           color: const Color.fromARGB(255, 16, 44, 87),

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:task_2/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:task_2/inventory_page.dart';
 import 'login_page.dart';
 import 'welcome_page.dart';
 import 'register_page.dart';
@@ -39,6 +40,7 @@ class Task5App extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/profile' : (context) => ProfilePage(),
+        '/inventory': (context) => Inventory_Page(),
 
       },
     );
@@ -51,63 +53,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String scannedResult = 'No barcode scanned yet!';
-  List<String> scannedResults = [];
   
-  Future<void> scanBarcode() async {
-    
-    
-    bool permissionGranted = await Permission.camera.request().isGranted;
-
-    if (!permissionGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Camera permission is required to scan barcodes")),
-      );
-      return;
-    }
-
-    try {
-      String barcode = await FlutterBarcodeScanner.scanBarcode(
-        "#ff6666", 
-        "Cancel",  
-        true,      
-        ScanMode.BARCODE, 
-      );
-      if (barcode != "-1") {
-        setState(() {
-          scannedResult = barcode;
-        });
-        saveScannedResult(barcode);
-      } else {
-        setState(() {
-          scannedResult = "Scan canceled!";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        scannedResult = "Error occurred: $e";
-      });
-    }
-  }
-  @override
-  void initState() {
-    super.initState();
-    loadScannedResults(); 
-  }
-  Future<void> loadScannedResults() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      scannedResults = prefs.getStringList('scannedResults') ?? [];
-    });
-  }
-
-  Future<void> saveScannedResult(String result) async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      scannedResults.add(result); 
-    });
-    await prefs.setStringList('scannedResults', scannedResults);
-  }
   
  @override
   Widget build(BuildContext context) {
@@ -115,6 +61,16 @@ class _ProfilePageState extends State<ProfilePage> {
     
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: const Text(
+          "Profile",
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+          ),
+        backgroundColor: const Color.fromARGB(255, 218, 235, 228),
+      ),
       body: SizedBox.expand(
         child: Container(
           color: const Color.fromARGB(255, 16, 44, 87),
@@ -138,6 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Icon(Icons.menu_outlined,color: Colors.white,size: 35,)
                     ],
                   ),
+
                 ),
                 SizedBox(height: 30,),
                 Padding(
@@ -147,27 +104,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Welcome ${authProvider.fullName ?? 'Guest'}",
-                        style: TextStyle(
-                          fontSize: 25,
+                        "Welcome ${authProvider.fullName ?? 'Guest'}!",
+                        style: const TextStyle(
+                          fontSize: 35,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 20,),
+                      const SizedBox(height: 20,),
                       Text(
                         "Email: ${authProvider.email ?? 'Guest@email'}",
-                        style: TextStyle(
-                          fontSize: 25,
+                        style: const TextStyle(
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 20,),
+                      const SizedBox(height: 20,),
                       Text(
                         "Phone: ${authProvider.phone ?? 0}",
-                        style: TextStyle(
-                          fontSize: 25,
+                        style: const TextStyle(
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -214,13 +171,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         child: ElevatedButton(
                           onPressed: () {
-                            scanBarcode();
+                            Navigator.pushNamed(context, '/inventory');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color.fromARGB(255, 218, 192, 163)
                           ),
                           child: const Text(
-                            'Barcode Scanner',
+                            'Open Inventory',
                             style: TextStyle(
                               fontSize: 25,
                               fontWeight: FontWeight.bold,
@@ -230,39 +187,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 20,),
-                      Text(
-                        'Scanned Result: $scannedResult\n',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-
-                      ),
-                      const SizedBox(height: 20,),
-                      const Text(
-                        'Previously Scanned Result:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 20,
-                        ),
-                      ),
-                      const SizedBox(height: 10,),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: scannedResults.length,
-                        itemBuilder: (context,index){
-                          return ListTile(
-                            leading: const Icon(Icons.qr_code,color: Colors.white,),
-                            title: Text(
-                              scannedResults[index],
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        },
-                      ),
+                      
                       const SizedBox(height: 30,),
                       ConnectivityWidget(),
 
